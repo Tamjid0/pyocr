@@ -1,0 +1,107 @@
+{
+  "system_context": {
+    "role": "Python is ONLY a perception layer. It must not generate nodeIds, handle chunking, decide citations, or run RAG logic.",
+    "goal": "Provide high-fidelity OCR, layout analysis, and math extraction to be consumed by Node.js for atomic node construction."
+  },
+  "input_contract": {
+    "description": "What Node.js sends to the Python OCR Microservice.",
+    "payload": {
+      "document_id": "string (UUID or Hash)",
+      "page_index": "integer",
+      "image_data": "string (Base64 encoded PNG or JPEG of the page)",
+      "image_width": "integer (px)",
+      "image_height": "integer (px)",
+      "processing_flags": {
+        "extract_text": "boolean",
+        "extract_math": "boolean",
+        "detect_layout": "boolean"
+      }
+    }
+  },
+  "output_contract": {
+    "description": "What Python returns to Node.js. Python MUST NOT include nodeIds or chunking logic.",
+    "payload": {
+      "page_index": "integer",
+      "page_width": "integer (px, matching input)",
+      "page_height": "integer (px, matching input)",
+      "reading_order_hints": "array of region indices representing Surya's detected reading order",
+      "extracted_regions": [
+        {
+          "region_index": "integer (0-based, matching reading_order_hints)",
+          "region_type": "enum (Text, Math, Table, Image, Figure)",
+          "bbox": {
+            "x0": "float (px, left)",
+            "y0": "float (px, top)",
+            "x1": "float (px, right)",
+            "y1": "float (px, bottom)"
+          },
+          "confidence_score": "float (0.0 to 1.0)",
+          "extracted_lines": [
+            {
+              "text": "string (Extracted text or LaTeX for math)",
+              "bbox": {
+                "x0": "float",
+                "y0": "float",
+                "x1": "float",
+                "y1": "float"
+              },
+              "style": {
+                "font_size": "float (Derived from bbox height if native font size is unavailable)",
+                "is_bold": "boolean (Required for Heading Isolation)"
+              },
+              "confidence_score": "float",
+              "extracted_words": [
+                {
+                  "text": "string",
+                  "bbox": {
+                    "x0": "float",
+                    "y0": "float",
+                    "x1": "float",
+                    "y1": "float"
+                  },
+                  "confidence_score": "float"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "mapping_requirements_for_node": {
+    "description": "How Node.js will process the Python output.",
+    "rules": [
+      "Convert OCR lines/words into Atomic Nodes: Node.js will iterate through `extracted_lines` and `extracted_words` and instantiate `TextNode` or `MathNode` objects.",
+      "Assign nodeIds: Node.js will generate `node-${pageIndex}-${index}` sequentially based on the `reading_order_hints` provided by Python.",
+      "Preserve BBox Mapping: Python's absolute pixel bboxes (x0, y0, x1, y1) MUST be converted by Node.js into percentage-based bboxes (x, y, width, height) relative to page dimensions before inserting into the DocumentGraph.",
+      "Maintain Ordering: Node.js MUST sort the injected nodes according to Python's `reading_order_hints` to preserve multi-column or complex layout flow for the StructuredChunker.",
+      "Inject Styles for Chunker: Node.js MUST map Python's `style.font_size` and `style.is_bold` into the `TextNode.content.style` object. The `StructuredChunker` strictly relies on these to dynamically calculate adaptive line-heights and to isolate semantic Headings from Body text.",
+      "Handle Math vs Text: If `region_type` is 'Math', Node.js will wrap the text in LaTeX delimiters ($$ or \\[ \\]) and assign a specific style/type to ensure the StructuredChunker preserves it intact."
+    ]
+  },
+  "layout_rules": {
+    "description": "How Surya layout output maps to our system.",
+    "rules": [
+      "Surya Output to Blocks: Surya's detected structural regions (paragraphs, headers) map directly to `extracted_regions`. Node.js uses these regions as hard boundaries; the StructuredChunker will not merge nodes across different regions.",
+      "Reading Order: Python MUST use Surya to determine the logical reading sequence (e.g., top-to-bottom, left-column then right-column) and return this as `reading_order_hints`.",
+      "Multi-Column Pages: Surya must identify separate columns as distinct regions. Python must order the `reading_order_hints` such that the entire left column is read before the right column."
+    ]
+  },
+  "fallback_rules": {
+    "description": "Rules for triggering OCR vs native extraction.",
+    "rules": [
+      "Triggering OCR: Node.js will trigger the Python pipeline ONLY IF native extraction (e.g., pdf.js) yields an abnormally low text-to-image ratio, or if the user explicitly requests 'Deep OCR' mode.",
+      "Using Existing Text: If native extraction successfully retrieves text with valid bounding boxes and standard fonts, Node.js will bypass Python OCR entirely to save compute.",
+      "Detecting Image-Heavy Pages: Node.js will analyze the PDF page payload. If the page consists of a single large image spanning >90% of the viewport, it is flagged as scanned and routed directly to Python."
+    ]
+  },
+  "performance_constraints": {
+    "description": "Constraints for the Python Microservice running in Cloud Run.",
+    "rules": [
+      "Environment: Deployed on Cloud Run (CPU-only or lightweight GPU if configured). Must boot quickly and handle cold starts.",
+      "Memory: Process within strict memory limits. Free large tensors (PaddleOCR/Surya models) from memory between batches if memory is constrained, or use persistent lightweight models.",
+      "Batching: Node.js will send requests batched per page. Python should process one page request at a time to prevent OOM errors, unless specifically configured for batched inference.",
+      "Response Time: Python must prioritize layout extraction and PaddleOCR text extraction over heavy Pix2Text math extraction unless math is explicitly detected or requested."
+    ]
+  }
+}
