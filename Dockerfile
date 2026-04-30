@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# Install system dependencies for PaddleOCR and OpenCV
+# Install system dependencies (minimal)
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
@@ -9,19 +9,19 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install CPU-only versions of heavy ML libraries to save GBs of space
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir paddlepaddle==2.6.1 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+# Install CPU-only torch
+RUN pip install --no-cache-dir --default-timeout=10000 torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-# Copy requirements and install the rest
+# Copy requirements and install
 COPY requirements.txt .
-RUN pip install --no-cache-dir --default-timeout=1000 -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=10000 -r requirements.txt
 
-# Copy application code
+# Pre-download Surya models
+COPY download_models.py .
+RUN python download_models.py
+
+ENV VERSION=1.0.6
 COPY . .
 
-# Expose port
 EXPOSE 8080
-
-# Run with uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

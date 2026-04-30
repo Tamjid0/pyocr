@@ -1,40 +1,42 @@
+import logging
 from app.models.layout_model import LayoutModel
 from app.models.ocr_model import OCRModel
 from app.models.math_model import MathModel
-import logging
 
 logger = logging.getLogger(__name__)
 
 class ModelManager:
     _instance = None
-    
-    def __init__(self):
-        self.layout = None
-        self.ocr = None
-        self.math = None
-        self.initialized = False
 
-    @classmethod
-    def get_instance(cls):
+    def __new__(cls):
         if cls._instance is None:
-            cls._instance = cls()
+            cls._instance = super(ModelManager, cls).__new__(cls)
+            cls._instance.initialized = False
+            cls._instance.layout = None
+            cls._instance.ocr = None
+            cls._instance.math = None
         return cls._instance
 
     def load_models(self):
-        """Initializes all models. Call this during FastAPI lifespan startup."""
         if self.initialized:
             return
-            
-        logger.info("Initializing Perception Models (Surya, PaddleOCR, Pix2Text)...")
+
         try:
+            logger.info("📦 Beginning STABLE model initialization sequence...")
+            
+            logger.info("🔍 Loading Surya Layout Detection model...")
             self.layout = LayoutModel()
+            
+            logger.info("🔍 Loading Surya Recognition engine...")
             self.ocr = OCRModel()
-            self.math = MathModel()
+            
+            logger.info("🔍 Initializing Math extraction (Surya-based)...")
+            self.math = MathModel(self.ocr)
+            
             self.initialized = True
-            logger.info("All models loaded successfully.")
+            logger.info("🌟 ALL MODELS LOADED SUCCESSFULLY")
         except Exception as e:
-            logger.error(f"Failed to load models: {str(e)}")
+            logger.error(f"❌ CRITICAL ERROR: Failed to load models: {str(e)}")
             raise e
 
-# Global singleton
-models = ModelManager.get_instance()
+models = ModelManager()

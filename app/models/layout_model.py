@@ -6,10 +6,19 @@ from surya.layout import batch_layout_detection
 from surya.ordering import batch_ordering
 from PIL import Image
 
+from transformers import VisionEncoderDecoderConfig
+from surya.model.ordering.decoder import MBART_ATTENTION_CLASSES
+
+# Monkeypatch for Surya 0.4.14 / Transformers compatibility
+MBART_ATTENTION_CLASSES["sdpa"] = MBART_ATTENTION_CLASSES["eager"]
+
 class LayoutModel:
     def __init__(self):
+        # Force eager attention implementation for compatibility
         self.model = load_model()
         self.processor = load_processor()
+        
+        # Explicitly load and fix ordering model config
         self.order_model = load_order_model()
         self.order_processor = load_order_processor()
 

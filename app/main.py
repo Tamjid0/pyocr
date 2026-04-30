@@ -1,23 +1,29 @@
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from app.core.model_manager import models
-from app.api.endpoints import router as api_router
 import logging
+import os
 
-# Configure Logging
+# Configure Logging first
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[logging.StreamHandler()]
 )
-
 logger = logging.getLogger(__name__)
+
+# Force eager attention to prevent 'sdpa' KeyError in older Surya versions
+os.environ["TRANSFORMERS_ATTENTION_IMPLEMENTATION"] = "eager"
+
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from app.core.model_manager import models
+from app.api.endpoints import router as api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Load models
-    logger.info("Starting up Document Perception Engine...")
+    logger.info("🚀 Starting up Document Perception Engine...")
+    logger.info("🛠️ Configuration: CPU-only inference mode enabled.")
     models.load_models()
+    logger.info("✅ Startup complete. Service is ready to receive requests.")
     yield
     # Shutdown: Clean up if needed
     logger.info("Shutting down Document Perception Engine...")
