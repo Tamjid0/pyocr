@@ -22,8 +22,17 @@ class PerceptionPipeline:
         
         # 3. Surya Reading Order
         order = models.layout.detect_order(image, bboxes)
-        # order.selection_indices gives us the sorted indices of regions
-        reading_order_hints = order.selection_indices
+        # order.bboxes is a list of OrderBox objects, one for each input bbox.
+        # Each OrderBox has a 'position' attribute (0-indexed reading order).
+        # We want reading_order_hints to be a list of indices into the layout.bboxes list, 
+        # ordered by their reading position.
+        
+        # Create a list of (input_index, reading_position)
+        positions = [(i, b.position) for i, b in enumerate(order.bboxes)]
+        # Sort by reading_position
+        sorted_positions = sorted(positions, key=lambda x: x[1])
+        # Extract the original indices
+        reading_order_hints = [p[0] for p in sorted_positions]
         
         extracted_regions = []
         
