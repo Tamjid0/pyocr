@@ -25,7 +25,10 @@ class OCRModel:
         processor = load_rec_processor()
         
         lang_list = [langs for _ in images]
-        results = run_recognition(images, lang_list, model, processor)
+        # Surya requires explicit bboxes. Since each image is already a cropped
+        # region, pass a single bbox covering the full dimensions of each image.
+        bboxes = [[[0, 0, img.width, img.height]] for img in images]
+        results = run_recognition(images, lang_list, model, processor, bboxes=bboxes)
         
         logger.info("    -> Unloading Recognition model from RAM...")
         del model
