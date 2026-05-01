@@ -21,9 +21,9 @@ from app.api.endpoints import router as api_router
 async def lifespan(app: FastAPI):
     # Startup: Load models
     logger.info("🚀 Starting up Document Perception Engine...")
-    logger.info("🛠️ Configuration: CPU-only inference mode enabled.")
+    logger.info("🛠️ Configuration: Super-Lazy Mode (Models and Libraries load on first request).")
     models.load_models()
-    logger.info("✅ Startup complete. Service is ready to receive requests.")
+    logger.info("✅ Startup complete. Service is ready.")
     yield
     # Shutdown: Clean up if needed
     logger.info("Shutting down Document Perception Engine...")

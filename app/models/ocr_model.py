@@ -1,14 +1,10 @@
 from typing import List
 from PIL import Image
-from surya.ocr import run_recognition
-from surya.model.recognition.model import load_model as load_rec_model
-from surya.model.recognition.processor import load_processor as load_rec_processor
 import logging
-
-logger = logging.getLogger(__name__)
-
 import gc
 import torch
+
+logger = logging.getLogger(__name__)
 
 class OCRModel:
     def __init__(self):
@@ -17,6 +13,10 @@ class OCRModel:
 
     def extract_text(self, image: Image.Image, langs: List[str] = None):
         """Runs Surya OCR on an image and returns structured results."""
+        from surya.ocr import run_recognition
+        from surya.model.recognition.model import load_model as load_rec_model
+        from surya.model.recognition.processor import load_processor as load_rec_processor
+        
         if langs is None:
             langs = ["en"]
             

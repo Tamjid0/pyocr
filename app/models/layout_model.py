@@ -1,17 +1,5 @@
 import os
-from surya.model.detection.segformer import load_processor, load_model
-from surya.model.ordering.model import load_model as load_order_model
-from surya.model.ordering.processor import load_processor as load_order_processor
-from surya.layout import batch_layout_detection
-from surya.ordering import batch_ordering
 from PIL import Image
-
-from transformers import VisionEncoderDecoderConfig
-from surya.model.ordering.decoder import MBART_ATTENTION_CLASSES
-
-# Monkeypatch for Surya 0.4.14 / Transformers compatibility
-MBART_ATTENTION_CLASSES["sdpa"] = MBART_ATTENTION_CLASSES["eager"]
-
 import gc
 import torch
 import logging
@@ -25,6 +13,9 @@ class LayoutModel:
 
     def detect_layout(self, image: Image.Image):
         """Loads Layout model, detects regions, unloads model."""
+        from surya.model.detection.segformer import load_processor, load_model
+        from surya.layout import batch_layout_detection
+        
         logger.info("    -> Loading Layout model into RAM...")
         model = load_model()
         processor = load_processor()
@@ -42,6 +33,15 @@ class LayoutModel:
 
     def detect_order(self, image: Image.Image, bboxes: list):
         """Loads Order model, detects reading order, unloads model."""
+        from surya.model.ordering.model import load_model as load_order_model
+        from surya.model.ordering.processor import load_processor as load_order_processor
+        from surya.ordering import batch_ordering
+        from transformers import VisionEncoderDecoderConfig
+        from surya.model.ordering.decoder import MBART_ATTENTION_CLASSES
+
+        # Monkeypatch for Surya 0.4.14 / Transformers compatibility
+        MBART_ATTENTION_CLASSES["sdpa"] = MBART_ATTENTION_CLASSES["eager"]
+
         logger.info("    -> Loading Ordering model into RAM...")
         order_model = load_order_model()
         order_processor = load_order_processor()
