@@ -7,6 +7,8 @@ import logging
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+import traceback
+
 @router.post("/ocr/process-page", response_model=OCRResponse)
 async def process_page(request: OCRRequest):
     """
@@ -17,5 +19,6 @@ async def process_page(request: OCRRequest):
         result = await PerceptionPipeline.process_page(request)
         return result
     except Exception as e:
-        logger.error(f"Error processing page: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_trace = traceback.format_exc()
+        logger.error(f"Error processing page: {error_trace}")
+        raise HTTPException(status_code=500, detail=error_trace)
