@@ -7,16 +7,31 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import gc
+import torch
+
 class OCRModel:
     def __init__(self):
-        logger.info("  - Initializing Surya Recognition model (Stable PyTorch)...")
-        self.model = load_rec_model()
-        self.processor = load_rec_processor()
+        # We no longer load models at startup to save RAM
+        pass
 
     def extract_text(self, image: Image.Image, langs: List[str] = None):
         """Runs Surya OCR on an image and returns structured results."""
         if langs is None:
             langs = ["en"]
+            
+        logger.info("    -> Loading Recognition model into RAM...")
+        model = load_rec_model()
+        processor = load_rec_processor()
+        
         # run_recognition returns List[OCRResult]
-        results = run_recognition([image], [langs], self.model, self.processor)
+        results = run_recognition([image], [langs], model, processor)
+        
+        logger.info("    -> Unloading Recognition model from RAM...")
+        del model
+        del processor
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
         return results[0]

@@ -22,19 +22,19 @@ class ModelManager:
             return
 
         try:
-            logger.info("📦 Beginning STABLE model initialization sequence...")
+            logger.info("📦 Beginning STABLE model manager initialization (Lazy Loading enabled)...")
             
-            logger.info("🔍 Loading Surya Layout Detection model...")
+            logger.info("⚙️ Initializing Layout Manager (Model will load on demand)...")
             self.layout = LayoutModel()
             
-            logger.info("🔍 Loading Surya Recognition engine...")
+            logger.info("⚙️ Initializing Recognition Manager (Model will load on demand)...")
             self.ocr = OCRModel()
             
-            logger.info("🔍 Initializing Math extraction (Surya-based)...")
+            logger.info("⚙️ Initializing Math Manager (Model will load on demand)...")
             self.math = MathModel(self.ocr)
             
             self.initialized = True
-            logger.info("🌟 ALL MODELS LOADED SUCCESSFULLY")
+            logger.info("🌟 MODEL MANAGERS READY (RAM overhead: Minimal)")
         except Exception as e:
             logger.error(f"❌ CRITICAL ERROR: Failed to load models: {str(e)}")
             raise e
