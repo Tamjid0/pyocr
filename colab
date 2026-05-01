@@ -1,0 +1,46 @@
+# === ONE-CLICK CLOUD OCR START ===
+import os
+
+# 1. Configuration
+REPO_URL = "https://github.com/Tamjid0/pyocr.git"
+REPO_DIR = "pyocr"  # Fixed: Points to your actual repo folder
+NGROK_TOKEN = "3D7DPWdOrmeJCvePwE6AvZitDQL_Uhmv7TGyTQvrNBXm1hCm"
+
+# 2. Clone Repository (if not exists)
+if not os.path.exists(REPO_DIR):
+    print("🛰️ Cloning Repository...")
+    !git clone {REPO_URL}
+else:
+    print("✅ Repository already exists.")
+
+%cd {REPO_DIR}
+
+# 3. Install Dependencies
+print("📦 Installing Libraries (This may take 2 mins)...")
+!pip install -r requirements.txt --quiet
+!pip install pyngrok nest-asyncio --quiet
+
+# 4. Download Models (if not already cached)
+print("🧠 Checking AI Models...")
+!python download_models.py
+
+# 5. Clean up old sessions & Start API
+print("🧹 Clearing old connections...")
+!fuser -k 8080/tcp
+
+import nest_asyncio
+from pyngrok import ngrok
+import uvicorn
+
+# Setup Tunnel
+ngrok.set_auth_token(NGROK_TOKEN)
+public_url = ngrok.connect(8080).public_url
+
+print(f"\n" + "="*50)
+print(f"🚀 PRODUCTION API IS LIVE!")
+print(f"🔗 URL: {public_url}")
+print(f"="*50 + "\n")
+
+# Start Server
+nest_asyncio.apply()
+uvicorn.run("app.main:app", host="0.0.0.0", port=8080)
