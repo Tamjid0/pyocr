@@ -28,7 +28,15 @@ class PerceptionPipeline:
         extracted_regions = []
         
         # 4. Region-based Extraction
-        for idx, region in enumerate(layout.bboxes):
+        # Extract all sub-images first to process them in a single batch
+        sub_images = [get_sub_image(image, region.bbox) for region in layout.bboxes]
+        
+        if len(sub_images) > 0:
+            ocr_results = models.ocr.extract_text(sub_images, langs=["en"])
+        else:
+            ocr_results = []
+            
+        for idx, (region, ocr_result) in enumerate(zip(layout.bboxes, ocr_results)):
             region_type = region.label
             bbox = region.bbox
             
@@ -39,10 +47,6 @@ class PerceptionPipeline:
             
             is_bold = any(kw in region_type.lower() for kw in ['title', 'header', 'section'])
             region_lines = []
-            
-            # Using Surya for everything now for stability
-            sub_img = get_sub_image(image, bbox)
-            ocr_result = models.ocr.extract_text(sub_img, langs=["en"])
             
             for line in ocr_result.text_lines:
                 # Surya bbox is [x0, y0, x1, y1] relative to sub-image

@@ -11,8 +11,8 @@ class OCRModel:
         # We no longer load models at startup to save RAM
         pass
 
-    def extract_text(self, image: Image.Image, langs: List[str] = None):
-        """Runs Surya OCR on an image and returns structured results."""
+    def extract_text(self, images: List[Image.Image], langs: List[str] = None):
+        """Runs Surya OCR on a list of images and returns structured results."""
         from surya.ocr import run_recognition
         from surya.model.recognition.model import load_model as load_rec_model
         from surya.model.recognition.processor import load_processor as load_rec_processor
@@ -24,8 +24,8 @@ class OCRModel:
         model = load_rec_model()
         processor = load_rec_processor()
         
-        # run_recognition returns List[OCRResult]
-        results = run_recognition([image], [langs], model, processor)
+        lang_list = [langs for _ in images]
+        results = run_recognition(images, lang_list, model, processor)
         
         logger.info("    -> Unloading Recognition model from RAM...")
         del model
@@ -34,4 +34,4 @@ class OCRModel:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             
-        return results[0]
+        return results
