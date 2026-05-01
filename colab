@@ -1,46 +1,55 @@
-# === ONE-CLICK CLOUD OCR START ===
+# === CELL 1: SETUP ===
+import os, shutil
+%cd /content
+if os.path.exists('pyocr'): shutil.rmtree('pyocr')
+!git clone https://github.com/Tamjid0/pyocr.git
+%cd /content/pyocr
+!pip install surya-ocr==0.4.14 pyngrok nest-asyncio fastapi uvicorn python-multipart --quiet
+!python download_models.py
+print("✅ Setup Complete. Proceed to Cell 2.")
+
+
+
+# === CELL 2: HIGH-VISIBILITY LAUNCH ===
+import time
+from pyngrok import ngrok
 import os
 
 # 1. Configuration
-REPO_URL = "https://github.com/Tamjid0/pyocr.git"
-REPO_DIR = "pyocr"  # Fixed: Points to your actual repo folder
 NGROK_TOKEN = "3D7DPWdOrmeJCvePwE6AvZitDQL_Uhmv7TGyTQvrNBXm1hCm"
+PORT = 9000
 
-# 2. Clone Repository (if not exists)
-if not os.path.exists(REPO_DIR):
-    print("🛰️ Cloning Repository...")
-    !git clone {REPO_URL}
-else:
-    print("✅ Repository already exists.")
-
-%cd {REPO_DIR}
-
-# 3. Install Dependencies
-print("📦 Installing Libraries (This may take 2 mins)...")
-!pip install -r requirements.txt --quiet
-!pip install pyngrok nest-asyncio --quiet
-
-# 4. Download Models (if not already cached)
-print("🧠 Checking AI Models...")
-!python download_models.py
-
-# 5. Clean up old sessions & Start API
-print("🧹 Clearing old connections...")
-!fuser -k 8080/tcp
-
-import nest_asyncio
-from pyngrok import ngrok
-import uvicorn
-
-# Setup Tunnel
+# 2. Cleanup
+print("1️⃣ Cleaning up old sessions...")
+!fuser -k {PORT}/tcp || true
 ngrok.set_auth_token(NGROK_TOKEN)
-public_url = ngrok.connect(8080).public_url
 
-print(f"\n" + "="*50)
-print(f"🚀 PRODUCTION API IS LIVE!")
-print(f"🔗 URL: {public_url}")
-print(f"="*50 + "\n")
+# 3. Start Public Tunnel (This is usually where it hangs)
+print("2️⃣ Connecting to Ngrok... (Please wait 10 seconds)")
+try:
+    # Force kill any old ngrok processes
+    !pkill ngrok || true
+    time.sleep(2)
+    public_url = ngrok.connect(PORT).public_url
+    print(f"✅ NGROK CONNECTED: {public_url}")
+except Exception as e:
+    print(f"❌ NGROK FAILED: {e}")
+    public_url = "FAILED"
 
-# Start Server
-nest_asyncio.apply()
-uvicorn.run("app.main:app", host="0.0.0.0", port=8080)
+# 4. Start Server in Background
+if public_url != "FAILED":
+    print("3️⃣ Starting OCR Engine in Background...")
+    # We use -u for unbuffered output so we can see logs instantly
+    !nohup python -u -m uvicorn app.main:app --host 0.0.0.0 --port {PORT} > server.log 2>&1 &
+    
+    print("4️⃣ Waiting for startup (15 seconds)...")
+    time.sleep(15)
+    
+    print("\n" + "="*50)
+    print("📜 LATEST SERVER LOGS:")
+    !tail -n 10 server.log
+    print("="*50 + "\n")
+    
+    print(f"🚀 FINAL PUBLIC URL: {public_url}")
+else:
+    print("🛑 Script stopped because Ngrok failed.")

@@ -9,8 +9,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Force eager attention to prevent 'sdpa' KeyError in older Surya versions
-os.environ["TRANSFORMERS_ATTENTION_IMPLEMENTATION"] = "eager"
+
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
