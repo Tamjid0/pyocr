@@ -14,20 +14,20 @@ class TextStyle(BaseModel):
 class ExtractedWord(BaseModel):
     text: str
     bbox: BBox
-    confidence_score: float
+    confidence_score: Optional[float] = 0.0
 
 class ExtractedLine(BaseModel):
     text: str
     bbox: BBox
     style: TextStyle
-    confidence_score: float
+    confidence_score: Optional[float] = 0.0
     extracted_words: List[ExtractedWord] = Field(default_factory=list)
 
 class ExtractedRegion(BaseModel):
     region_index: int
     region_type: str = Field(..., description="Text, Math, Table, Image, Figure")
     bbox: BBox
-    confidence_score: float
+    confidence_score: Optional[float] = 0.0
     extracted_lines: List[ExtractedLine] = Field(default_factory=list)
 
 class OCRResponse(BaseModel):
