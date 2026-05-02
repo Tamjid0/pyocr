@@ -8,33 +8,45 @@ logger = logging.getLogger(__name__)
 
 class OCRModel:
     def __init__(self):
-        # We no longer load models at startup to save RAM
-        pass
+        self._rec_model = None
+        self._rec_processor = None
+        self._det_model = None
+        self._det_processor = None
 
-    def extract_text(self, images: List[Image.Image], langs: List[str] = None):
-        """Runs Surya OCR on a list of images and returns structured results."""
+    def _load_recognition(self):
+        if self._rec_model is None:
+            from surya.model.recognition.model import load_model as load_rec_model
+            from surya.model.recognition.processor import load_processor as load_rec_processor
+            logger.info("    -> Loading Recognition model into VRAM (Persistent)...")
+            self._rec_model = load_rec_model()
+            self._rec_processor = load_rec_processor()
+        return self._rec_model, self._rec_processor
+
+    def _load_detection(self):
+        if self._det_model is None:
+            from surya.model.detection.segformer import load_model as load_det_model
+            from surya.model.detection.segformer import load_processor as load_det_processor
+            logger.info("    -> Loading Detection model into VRAM (Persistent)...")
+            self._det_model = load_det_model()
+            self._det_processor = load_det_processor()
+        return self._det_model, self._det_processor
+
+    def detect_lines(self, images: List[Image.Image]):
+        """Detects text lines in a list of images."""
+        from surya.detection import batch_text_detection
+        model, processor = self._load_detection()
+        det_predictions = batch_text_detection(images, model, processor)
+        return det_predictions
+
+    def extract_text(self, images: List[Image.Image], bboxes: List[List[List[float]]], langs: List[str] = None):
+        """Runs Surya OCR on a list of images and specific bboxes."""
         from surya.ocr import run_recognition
-        from surya.model.recognition.model import load_model as load_rec_model
-        from surya.model.recognition.processor import load_processor as load_rec_processor
         
         if langs is None:
             langs = ["en"]
             
-        logger.info("    -> Loading Recognition model into RAM...")
-        model = load_rec_model()
-        processor = load_rec_processor()
-        
+        model, processor = self._load_recognition()
         lang_list = [langs for _ in images]
-        # Surya requires explicit bboxes. Since each image is already a cropped
-        # region, pass a single bbox covering the full dimensions of each image.
-        bboxes = [[[0, 0, img.width, img.height]] for img in images]
-        results = run_recognition(images, lang_list, model, processor, bboxes=bboxes)
         
-        logger.info("    -> Unloading Recognition model from RAM...")
-        del model
-        del processor
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            
+        results = run_recognition(images, lang_list, model, processor, bboxes=bboxes)
         return results
