@@ -39,3 +39,32 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "models_loaded": models.initialized}
+
+@app.get("/diagnostic")
+async def diagnostic():
+    import torch
+    import psutil
+    
+    cuda_available = torch.cuda.is_available()
+    cuda_info = {}
+    if cuda_available:
+        cuda_info = {
+            "device_name": torch.cuda.get_device_name(0),
+            "device_count": torch.cuda.device_count(),
+            "memory_allocated": f"{torch.cuda.memory_allocated(0) / 1024**2:.2f} MB",
+            "memory_reserved": f"{torch.cuda.memory_reserved(0) / 1024**2:.2f} MB",
+        }
+        
+    return {
+        "status": "ready",
+        "models_initialized": models.initialized,
+        "cuda": {
+            "available": cuda_available,
+            **cuda_info
+        },
+        "system_ram": f"{psutil.virtual_memory().available / 1024**2:.2f} MB available",
+        "persistent_state": {
+            "layout": models.layout._layout_model is not None if models.layout else False,
+            "ocr": models.ocr._rec_model is not None if models.ocr else False
+        }
+    }

@@ -12,13 +12,15 @@ class LayoutModel:
         self._layout_processor = None
         self._order_model = None
         self._order_processor = None
+        self._device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
+        logger.info(f"🚀 LayoutModel initialized with device: {self._device}")
 
     def _load_layout(self):
         if self._layout_model is None:
             from surya.model.detection.segformer import load_processor, load_model
-            logger.info("    -> Loading Layout model into VRAM (Persistent)...")
-            self._layout_model = load_model()
-            self._layout_processor = load_processor()
+            logger.info(f"    -> Loading Layout model into {self._device} (Persistent)...")
+            self._layout_model = load_model(device=self._device)
+            self._layout_processor = load_processor(device=self._device)
         return self._layout_model, self._layout_processor
 
     def _load_order(self):
@@ -30,9 +32,9 @@ class LayoutModel:
             # Monkeypatch for Surya 0.4.14 / Transformers compatibility
             MBART_ATTENTION_CLASSES["sdpa"] = MBART_ATTENTION_CLASSES["eager"]
             
-            logger.info("    -> Loading Ordering model into VRAM (Persistent)...")
-            self._order_model = load_order_model()
-            self._order_processor = load_order_processor()
+            logger.info(f"    -> Loading Ordering model into {self._device} (Persistent)...")
+            self._order_model = load_order_model(device=self._device)
+            self._order_processor = load_order_processor(device=self._device)
         return self._order_model, self._order_processor
 
     def detect_layout(self, image: Image.Image):
