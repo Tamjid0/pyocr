@@ -22,19 +22,25 @@ class ModelManager:
             return
 
         try:
-            logger.info("📦 Beginning STABLE model manager initialization (Lazy Loading enabled)...")
+            logger.info("📦 Beginning STABLE model manager initialization (Eager Loading)...")
             
-            logger.info("⚙️ Initializing Layout Manager (Model will load on demand)...")
+            logger.info("⚙️ Initializing Layout Manager...")
             self.layout = LayoutModel()
             
-            logger.info("⚙️ Initializing Recognition Manager (Model will load on demand)...")
+            logger.info("⚙️ Initializing Recognition Manager...")
             self.ocr = OCRModel()
             
-            logger.info("⚙️ Initializing Math Manager (Model will load on demand)...")
+            logger.info("⚙️ Initializing Math Manager...")
             self.math = MathModel(self.ocr)
+
+            # --- EAGER LOADING ---
+            logger.info("🚀 Eagerly loading models into VRAM to eliminate first-request latency...")
+            self.layout._load_layout()
+            self.ocr._load_detection()
+            self.ocr._load_recognition()
             
             self.initialized = True
-            logger.info("🌟 MODEL MANAGERS READY (RAM overhead: Minimal)")
+            logger.info("🌟 ALL MODELS LOADED AND READY IN VRAM")
         except Exception as e:
             logger.error(f"❌ CRITICAL ERROR: Failed to load models: {str(e)}")
             raise e
