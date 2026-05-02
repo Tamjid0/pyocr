@@ -20,7 +20,7 @@ class LayoutModel:
             from surya.model.detection.segformer import load_processor, load_model
             logger.info(f"    -> Loading Layout model into {self._device} (Persistent)...")
             self._layout_model = load_model(device=self._device)
-            self._layout_processor = load_processor(device=self._device)
+            self._layout_processor = load_processor()
         return self._layout_model, self._layout_processor
 
     def _load_order(self):
@@ -34,7 +34,7 @@ class LayoutModel:
             
             logger.info(f"    -> Loading Ordering model into {self._device} (Persistent)...")
             self._order_model = load_order_model(device=self._device)
-            self._order_processor = load_order_processor(device=self._device)
+            self._order_processor = load_order_processor()
         return self._order_model, self._order_processor
 
     def detect_layout(self, image: Image.Image):

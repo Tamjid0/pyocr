@@ -24,7 +24,7 @@ class OCRModel:
             from surya.model.recognition.processor import load_processor as load_rec_processor
             logger.info(f"    -> Loading Recognition model into {self._device} (Persistent)...")
             self._rec_model = load_rec_model(device=self._device)
-            self._rec_processor = load_rec_processor(device=self._device)
+            self._rec_processor = load_rec_processor()
         return self._rec_model, self._rec_processor
 
     def _load_detection(self):
@@ -33,7 +33,7 @@ class OCRModel:
             from surya.model.detection.segformer import load_processor as load_det_processor
             logger.info(f"    -> Loading Detection model into {self._device} (Persistent)...")
             self._det_model = load_det_model(device=self._device)
-            self._det_processor = load_det_processor(device=self._device)
+            self._det_processor = load_det_processor()
         return self._det_model, self._det_processor
 
     def detect_lines(self, images: List[Image.Image], batch_size: int = 16):
