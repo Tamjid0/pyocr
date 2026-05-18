@@ -36,3 +36,8 @@ class OCRResponse(BaseModel):
     page_height: int
     reading_order_hints: List[int] = Field(..., description="Array of region indices representing Surya's detected reading order")
     extracted_regions: List[ExtractedRegion] = Field(default_factory=list)
+
+class OCRBatchResponse(BaseModel):
+    document_id: str
+    results: List[OCRResponse]
+

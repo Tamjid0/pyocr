@@ -1,4 +1,4 @@
-cell-1
+
 # === CELL 1: SETUP ===
 import os, shutil
 %cd /content
@@ -37,7 +37,8 @@ except: pass
 # 3. Start Public Tunnel
 print("2️⃣ Connecting to Ngrok...")
 try:
-    public_url = ngrok.connect(PORT).public_url
+    # Use string format for the first argument to avoid "multiple values for addr" error
+    public_url = ngrok.connect(f"127.0.0.1:{PORT}", bind_tls=True).public_url
     print(f"✅ NGROK CONNECTED: {public_url}")
 except Exception as e:
     print(f"❌ NGROK FAILED: {e}")
@@ -46,8 +47,24 @@ except Exception as e:
 # 4. Start Server in Background
 if public_url != "FAILED":
     print("3️⃣ Starting OCR Engine in Background...")
-    # Using 'env' before PYTHONPATH ensures nohup runs correctly
-    !nohup env PYTHONPATH=. python -u -m uvicorn app.main:app --host 0.0.0.0 --port {PORT} > server.log 2>&1 &
+    
+    import subprocess
+    # Using subprocess.Popen instead of shell magic to avoid "Background processes not supported" error
+    with open("server.log", "w") as log_file:
+        env = os.environ.copy()
+        env["PYTHONPATH"] = "."
+        
+        subprocess.Popen(
+            [
+                "python", "-u", "-m", "uvicorn", "app.main:app", 
+                "--host", "0.0.0.0", 
+                "--port", str(PORT)
+            ],
+            env=env,
+            stdout=log_file,
+            stderr=log_file,
+            preexec_fn=os.setpgrp # Ensures the process continues if the cell finishes
+        )
 
     print("4️⃣ Waiting for startup (20 seconds)...")
     time.sleep(20)
@@ -61,3 +78,9 @@ if public_url != "FAILED":
     print("👉 Update your Node.js .env with this URL!")
 else:
     print("🛑 Script stopped because Ngrok failed.")
+
+
+
+
+
+!cat procr_server.log
