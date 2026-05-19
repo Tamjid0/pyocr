@@ -3,7 +3,7 @@
 import os, shutil
 %cd /content
 if os.path.exists('pyocr'): shutil.rmtree('pyocr')
-!git clone https://github.com/Tamjid0/pyocr.git
+!git clone -b prod https://github.com/Tamjid0/pyocr.git
 %cd /content/pyocr
 !pip install surya-ocr==0.4.14 pyngrok nest-asyncio fastapi uvicorn python-multipart --quiet
 !pip install transformers==4.41.2
@@ -64,4 +64,4 @@ else:
 
 
 
-!cat procr_server.log
+!cat pyocr_stats.log
