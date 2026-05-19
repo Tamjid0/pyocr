@@ -19,12 +19,18 @@ from app.api.endpoints import router as api_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Load models
-    logger.info("🚀 Starting up Document Perception Engine...")
-    logger.info("🛠️ Configuration: Super-Lazy Mode (Models and Libraries load on first request).")
+    logger.info("🚀 Starting up Document Perception Engine (PRODUCTION / A10 Mode)...")
+    
+    # --- A10 CO-TENANCY: Cap Surya to 6GB out of 24GB total VRAM ---
+    # MinerU (procr) will use the remaining ~18GB for its massive KV Cache.
+    import torch
+    if torch.cuda.is_available():
+        torch.cuda.set_per_process_memory_fraction(6 / 24, 0)  # 25% of A10 24GB = 6GB
+        logger.info("🛡️ A10 VRAM Cap: Surya limited to 6GB (25% of 24GB). MinerU gets remaining 18GB.")
+    
     models.load_models()
     logger.info("✅ Startup complete. Service is ready.")
     yield
-    # Shutdown: Clean up if needed
     logger.info("Shutting down Document Perception Engine...")
 
 app = FastAPI(
