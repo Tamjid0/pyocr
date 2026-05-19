@@ -36,14 +36,14 @@ class OCRModel:
             self._det_processor = load_det_processor()
         return self._det_model, self._det_processor
 
-    def detect_lines(self, images: List[Image.Image], batch_size: int = 16):
+    def detect_lines(self, images: List[Image.Image], batch_size: int = 4):
         """Detects text lines in a list of images."""
         from surya.detection import batch_text_detection
         model, processor = self._load_detection()
         det_predictions = batch_text_detection(images, model, processor, batch_size=batch_size)
         return det_predictions
 
-    def extract_text(self, images: List[Image.Image], bboxes: List[List[List[float]]], langs: List[str] = None, batch_size: int = 128):
+    def extract_text(self, images: List[Image.Image], bboxes: List[List[List[float]]], langs: List[str] = None, batch_size: int = 32):
         """Runs Surya OCR on a list of images and specific bboxes."""
         from surya.ocr import run_recognition
         
