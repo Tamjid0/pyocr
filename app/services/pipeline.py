@@ -1,4 +1,6 @@
 import logging
+import os
+from datetime import datetime
 from app.core.model_manager import models
 from app.schemas.request import OCRRequest, OCRBatchRequest
 from app.schemas.response import OCRResponse, ExtractedRegion, ExtractedLine, ExtractedWord, BBox, TextStyle, OCRBatchResponse
@@ -6,6 +8,15 @@ from app.utils.image_utils import decode_base64_image, pil_to_numpy, get_sub_ima
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+_STATS_LOG = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "pyocr_stats.log")
+
+def _write_stats(line: str):
+    try:
+        with open(_STATS_LOG, "a") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
 
 class PerceptionPipeline:
     @staticmethod
@@ -96,6 +107,7 @@ class PerceptionPipeline:
         
         total_time = time.perf_counter() - start_total
         logger.info(f"⏱️ PERFORMANCE [{request.document_id}]: Total {total_time:.2f}s | Decode {t_decode:.2f}s | Layout {t_layout:.2f}s | Order {t_order:.2f}s | Det {t_det:.2f}s | Rec {t_rec:.2f}s | Map {t_map:.2f}s")
+        _write_stats(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] PAGE {request.page_index} | Total: {total_time:.2f}s | Layout: {t_layout:.2f}s | Order: {t_order:.2f}s | Det: {t_det:.2f}s | Rec: {t_rec:.2f}s | Map: {t_map:.2f}s")
 
         return OCRResponse(
             page_index=request.page_index,
@@ -217,6 +229,7 @@ class PerceptionPipeline:
         t_map = time.perf_counter() - t0
         total_time = time.perf_counter() - start_total
         logger.info(f"⏱️ BATCH PERFORMANCE [{request.document_id}]: Total {total_time:.2f}s | Decode {t_decode:.2f}s | Layout {t_layout:.2f}s | Order {t_order:.2f}s | Det {t_det:.2f}s | Rec {t_rec:.2f}s | Map {t_map:.2f}s")
+        _write_stats(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] BATCH {len(request.pages)}pg | Total: {total_time:.2f}s | Layout: {t_layout:.2f}s | Order: {t_order:.2f}s | Det: {t_det:.2f}s | Rec: {t_rec:.2f}s | Map: {t_map:.2f}s")
         
         return OCRBatchResponse(
             document_id=request.document_id,
