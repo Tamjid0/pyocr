@@ -23,7 +23,7 @@ class OCRModel:
             from surya.model.recognition.model import load_model as load_rec_model
             from surya.model.recognition.processor import load_processor as load_rec_processor
             logger.info(f"    -> Loading Recognition model into {self._device} (Persistent)...")
-            self._rec_model = load_rec_model(device=self._device)
+            self._rec_model = load_rec_model(device=self._device, dtype=torch.float16)
             self._rec_processor = load_rec_processor()
         return self._rec_model, self._rec_processor
 
@@ -32,7 +32,7 @@ class OCRModel:
             from surya.model.detection.segformer import load_model as load_det_model
             from surya.model.detection.segformer import load_processor as load_det_processor
             logger.info(f"    -> Loading Detection model into {self._device} (Persistent)...")
-            self._det_model = load_det_model(device=self._device)
+            self._det_model = load_det_model(device=self._device, dtype=torch.float16)
             self._det_processor = load_det_processor()
         return self._det_model, self._det_processor
 
@@ -43,7 +43,7 @@ class OCRModel:
         det_predictions = batch_text_detection(images, model, processor, batch_size=batch_size)
         return det_predictions
 
-    def extract_text(self, images: List[Image.Image], bboxes: List[List[List[float]]], langs: List[str] = None, batch_size: int = 32):
+    def extract_text(self, images: List[Image.Image], bboxes: List[List[List[float]]], langs: List[str] = None, batch_size: int = 128):
         """Runs Surya OCR on a list of images and specific bboxes."""
         from surya.ocr import run_recognition
         

@@ -19,7 +19,7 @@ class LayoutModel:
         if self._layout_model is None:
             from surya.model.detection.segformer import load_processor, load_model
             logger.info(f"    -> Loading Layout model into {self._device} (Persistent)...")
-            self._layout_model = load_model(device=self._device)
+            self._layout_model = load_model(device=self._device, dtype=torch.float16)
             self._layout_processor = load_processor()
         return self._layout_model, self._layout_processor
 
@@ -33,7 +33,7 @@ class LayoutModel:
             MBART_ATTENTION_CLASSES["sdpa"] = MBART_ATTENTION_CLASSES["eager"]
             
             logger.info(f"    -> Loading Ordering model into {self._device} (Persistent)...")
-            self._order_model = load_order_model(device=self._device)
+            self._order_model = load_order_model(device=self._device, dtype=torch.float16)
             self._order_processor = load_order_processor()
         return self._order_model, self._order_processor
 

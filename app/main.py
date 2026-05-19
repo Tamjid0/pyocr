@@ -27,6 +27,12 @@ async def lifespan(app: FastAPI):
     if torch.cuda.is_available():
         torch.cuda.set_per_process_memory_fraction(6 / 24, 0)  # 25% of A10 24GB = 6GB
         logger.info("🛡️ A10 VRAM Cap: Surya limited to 6GB (25% of 24GB). MinerU gets remaining 18GB.")
+        
+        # --- PYTORCH HARDWARE ACCELERATION ---
+        torch.backends.cudnn.benchmark = True  # Auto-tunes Conv2D algorithms for SegFormer
+        torch.backends.cuda.matmul.allow_tf32 = True  # Enables Tensor Cores for Matrix Math
+        torch.backends.cudnn.allow_tf32 = True
+        logger.info("⚡ PyTorch Hardware Acceleration (CuDNN Benchmark & TF32) ENABLED")
     
     models.load_models()
     logger.info("✅ Startup complete. Service is ready.")
